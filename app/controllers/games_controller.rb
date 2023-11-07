@@ -1,14 +1,27 @@
 require "open-uri"
 
 class GamesController < ApplicationController
+  VOWELS = %w(A E I O U Y)
+
   def new
-    @letters = %w(Y Z D U Q E Z Y I)
+    @letters = Array.new(5) { VOWELS.sample }
+    @letters += Array.new(5) { (('A'..'Z').to_a - VOWELS).sample }
+    @letters.shuffle!
   end
 
   def score
-    @word = params[:word]
+    @score = 0
+    @word = params[:word].upcase
     @letters = params[:letters]
-    url = `{"message":"welcome","endpoints":["https://wagon-dictionary.herokuapp.com/:word","https://wagon-dictionary.herokuapp.com/autocomplete/:stem"],"total_api_hits":6336350,"words_found":3152938,"autocomplete_hits":1899435}`
-    flats = JSON.parse(URI.open(url).read)
+    response = URI.open("https://wagon-dictionary.herokuapp.com/#{@word}")
+    json = JSON.parse(response.read)
+    if params[:word].include?(@letters)
+      @result = "Sorry but #{@word} can't be built out of #{@letters}"
+    elsif json["found"] == false
+      @result = "Sorry but #{@word} does not seem to be a valid English word..."
+    else
+      @result = "Congratulations! #{@word} is a valid English word!"
+      @score += @word.length
+    end
   end
 end
